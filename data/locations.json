@@ -1,0 +1,32 @@
+[
+  {
+    "latitude": 42.74414236726527,
+    "longitude": 20.817504467266676,
+    "timestamp": "2025-12-02T01:54:48.546Z"
+  },
+  {
+    "latitude": 42.74414236726794,
+    "longitude": 20.81750446732307,
+    "timestamp": "2025-12-02T01:56:13.817Z"
+  },
+  {
+    "latitude": 42.74414236726511,
+    "longitude": 20.81750446731122,
+    "accuracy": 35,
+    "altitude": 0,
+    "altitudeAccuracy": null,
+    "heading": null,
+    "speed": null,
+    "timestamp": "2025-12-02T01:56:37.621Z"
+  },
+  {
+    "latitude": 42.74414236726541,
+    "longitude": 20.817504467310506,
+    "accuracy": 35,
+    "altitude": 0,
+    "altitudeAccuracy": null,
+    "heading": null,
+    "speed": null,
+    "timestamp": "2025-12-02T01:56:51.238Z"
+  }
+]

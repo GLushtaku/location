@@ -2,19 +2,37 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Quick Start (File System Storage - Default)
+
+The app works out of the box! Just run:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+Data will be saved to `/data/locations.json` automatically.
+
+### Using MongoDB (Optional - for deployment)
+
+If you want to use MongoDB (required for Vercel/serverless deployment):
+
+1. Copy the example env file:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+2. Get a free MongoDB database from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+
+3. Add your connection string to `.env.local`:
+   ```
+   MONGODB_URI=your-mongodb-connection-string
+   ```
+
+4. Restart the dev server
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
